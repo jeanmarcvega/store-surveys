@@ -256,17 +256,18 @@
   const form = document.getElementById('surveyForm');
   const submitBtn = form.querySelector('.submit-btn');
   
-  // Handle Q5 stars selection
+  // Handle Q5 stars selection (ROBUST: works even if user clicks inside the button)
   const starsGroup = document.getElementById('starsGroup');
   const starsInput = document.getElementById('starsInput');
   
   starsGroup.addEventListener('click', function(e) {
-    if (e.target.classList.contains('star-btn')) {
-      starsGroup.querySelectorAll('.star-btn').forEach(btn => btn.classList.remove('selected'));
-      e.target.classList.add('selected');
-      starsInput.value = e.target.dataset.stars;
-      document.getElementById('starsError').style.display = 'none';
-    }
+    const btn = e.target.closest('.star-btn');
+    if (!btn) return;
+
+    starsGroup.querySelectorAll('.star-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    starsInput.value = btn.dataset.stars;
+    document.getElementById('starsError').style.display = 'none';
   });
   
   // Form submission
@@ -326,7 +327,7 @@
     const easeValue = ease.value;
     const decisionValue = decision.value;
     const improveValue = improve.value;
-    const starRating = parseInt(stars);
+    const starRating = parseInt(stars, 10);
     
     // Open Trustpilot FIRST (before any async operations) for mobile compatibility
     // Mobile browsers block window.open() if not in direct user action
@@ -342,31 +343,11 @@
         title: '📋 New Survey Response - Matthews London',
         color: 3066993,
         fields: [
-          {
-            name: 'Q1. Name',
-            value: name,
-            inline: false
-          },
-          {
-            name: 'Q2. Order Ease',
-            value: easeValue,
-            inline: true
-          },
-          {
-            name: 'Q5. Rating',
-            value: '⭐'.repeat(starRating) + ` (${starRating} stars)`,
-            inline: true
-          },
-          {
-            name: 'Q3. Decision Factor',
-            value: decisionValue,
-            inline: false
-          },
-          {
-            name: 'Q4. Improvement',
-            value: improveValue,
-            inline: false
-          }
+          { name: 'Q1. Name', value: name, inline: false },
+          { name: 'Q2. Order Ease', value: easeValue, inline: true },
+          { name: 'Q5. Rating', value: '⭐'.repeat(starRating) + ` (${starRating} stars)`, inline: true },
+          { name: 'Q3. Decision Factor', value: decisionValue, inline: false },
+          { name: 'Q4. Improvement', value: improveValue, inline: false }
         ],
         timestamp: new Date().toISOString()
       }]
@@ -380,23 +361,21 @@
       } else {
         await fetch(webhookUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(discordPayload)
         });
       }
       
-      // Small delay to ensure Discord webhook completes
+      // Small delay to help ensure the webhook request is sent before redirect
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Redirect to thank you page for all ratings
-      window.location.href = 'https://matthews-london.com/pages/thank-you';
+      // Redirect to YOUR GitHub Pages thank you page
+      window.location.href = 'thankyou.html';
       
     } catch (error) {
       console.error('Error submitting survey:', error);
       // Still redirect even if Discord fails
-      window.location.href = 'https://matthews-london.com/pages/thank-you';
+      window.location.href = 'thankyou.html';
     }
   });
 })();
